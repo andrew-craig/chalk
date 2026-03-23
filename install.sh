@@ -3,6 +3,7 @@ set -euo pipefail
 
 CHALK_DIR=".chalk"
 SCRIPTS_DIR="$CHALK_DIR/scripts"
+TASKS_DIR="$CHALK_DIR/tasks"
 TASK_SCRIPT_URL="https://raw.githubusercontent.com/andrew-craig/chalk/main/scripts/task"
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -37,7 +38,9 @@ check_git_repo() {
 
 create_chalk_dir() {
     mkdir -p "$SCRIPTS_DIR"
+    mkdir -p "$TASKS_DIR"
     info "Created $SCRIPTS_DIR"
+    info "Created $TASKS_DIR"
 }
 
 # ── Step 3: Download the task script ─────────────────────────────────────────

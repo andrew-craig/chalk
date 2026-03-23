@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # tsk - File-based task management for agents
-# Tasks stored as markdown files with YAML frontmatter in tasks/
+# Tasks stored as markdown files with YAML frontmatter in .chalk/tasks/
 set -euo pipefail
 
 # Locate repo root and tasks directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || git rev-parse --show-toplevel)"
-TASKS_DIR="${TSK_DIR:-$REPO_ROOT/tasks}"
+TASKS_DIR="${TSK_DIR:-$REPO_ROOT/.chalk/tasks}"
 CLOSED_DIR="$TASKS_DIR/closed"
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -458,7 +458,7 @@ COMMANDS
     --status=STATUS           Filter by status (open|in_progress|blocked|deferred)
     --type=TYPE               Filter by type
     --priority=N              Filter by priority
-    --closed                  Include closed tasks (from tasks/closed/)
+    --closed                  Include closed tasks (from .chalk/tasks/closed/)
 
   update <id>                 Update task fields
     --status=STATUS           open|in_progress|blocked|deferred
@@ -469,13 +469,13 @@ COMMANDS
     --blocked_by=id1,id2      Set to empty string to clear: --blocked_by=
     --parent=id
 
-  close <id>                  Mark task closed and move to tasks/closed/
+  close <id>                  Mark task closed and move to .chalk/tasks/closed/
 
   ready                       Show open tasks sorted by priority
 
 FILES
-  tasks/<type>_<id>.md        Active tasks
-  tasks/closed/<type>_<id>.md Closed tasks
+  .chalk/tasks/<type>_<id>.md        Active tasks
+  .chalk/tasks/closed/<type>_<id>.md Closed tasks
 
 FRONTMATTER FIELDS
   id, title, type, status, priority, labels, blocked_by, parent,
