@@ -15,3 +15,39 @@ This will:
 - Add it to your `PATH`
 
 After installing, open a new terminal or run `source ~/.bashrc` (or `~/.zshrc`) to start using the `task` command.
+
+## Issue Types
+
+Each task has a **type**, **status**, and **priority**.
+
+### Types
+
+| Type | Description |
+|------|-------------|
+| `task` | General task |
+| `bug` | Bug fix |
+| `feature` | Feature request or implementation |
+| `chore` | Maintenance or housekeeping |
+| `epic` | Epic or major feature |
+| `decision` | Decision or design document |
+
+### Statuses
+
+| Status | Description |
+|--------|-------------|
+| `open` | Initial state |
+| `in_progress` | Currently being worked on |
+| `blocked` | Blocked by dependencies |
+| `deferred` | Deferred for later |
+
+Tasks can also be closed via `tsk close`.
+
+### Priorities
+
+| Priority | Level |
+|----------|-------|
+| `0` | Critical |
+| `1` | High |
+| `2` | Medium (default) |
+| `3` | Low |
+| `4` | Backlog |
