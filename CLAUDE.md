@@ -2,17 +2,17 @@
 
 ## Project Overview
 
-Hopper is a file-based task management system built for AI agents. It provides a single bash CLI tool (`hpr`) that stores tasks as markdown files with YAML frontmatter in a `tasks/` directory.
+Chalk is a file-based task management system built for AI agents. It provides a single bash CLI tool (`task`) that stores tasks as markdown files with YAML frontmatter in a `tasks/` directory.
 
 ## Repository Structure
 
 ```
-hopper/
+chalk/
 ├── CLAUDE.md          # This file
 ├── LICENSE            # MIT License
 ├── README.md          # Project description
 ├── scripts/
-│   └── hpr            # Main CLI tool (bash script, invoked as `hpr`)
+│   └── task           # Main CLI tool (bash script, invoked as `task`)
 └── tasks/             # Task storage (created at runtime)
     └── closed/        # Archived closed tasks
 ```
@@ -21,26 +21,26 @@ hopper/
 
 ```bash
 # Run directly
-./scripts/hpr <command> [args]
+./scripts/task <command> [args]
 
-# Or add to PATH and use as `hpr`
+# Or add to PATH and use as `task`
 export PATH="$PATH:$(git rev-parse --show-toplevel)/scripts"
-hpr <command> [args]
+task <command> [args]
 ```
 
-The tasks directory location can be overridden with the `HPR_DIR` environment variable.
+The tasks directory location can be overridden with the `task_DIR` environment variable.
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `hpr create "title" [opts]` | Create a new task |
-| `hpr show <id>` | Display full task details |
-| `hpr list [filters]` | List tasks with optional filters |
-| `hpr update <id> [fields]` | Update task fields |
-| `hpr close <id>` | Close a task (moves to `tasks/closed/`) |
-| `hpr ready` | Show open unblocked tasks sorted by priority |
-| `hpr help` | Show usage information |
+| `task create "title" [opts]` | Create a new task |
+| `task show <id>` | Display full task details |
+| `task list [filters]` | List tasks with optional filters |
+| `task update <id> [fields]` | Update task fields |
+| `task close <id>` | Close a task (moves to `tasks/closed/`) |
+| `task ready` | Show open unblocked tasks sorted by priority |
+| `task help` | Show usage information |
 
 ## Task File Format
 
@@ -89,7 +89,7 @@ Optional description body here.
 
 ## Code Architecture
 
-The script (`scripts/hpr`) is organized into three sections:
+The script (`scripts/task`) is organized into three sections:
 
 1. **Helpers** (lines 14–114): Utility functions for ID generation, YAML field reading/writing, task lookup, validation, and table formatting
 2. **Commands** (lines 118–492): One `cmd_*` function per subcommand (`create`, `show`, `list`, `update`, `close`, `ready`, `help`)

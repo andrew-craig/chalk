@@ -1,4 +1,4 @@
-# hopper
+# chalk
 A very simple task management system built for agents
 
 ## Installation
@@ -6,15 +6,15 @@ A very simple task management system built for agents
 Run the following from the root of any git repository:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/andrew-craig/hopper/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/andrew-craig/chalk/main/install.sh | bash
 ```
 
 This will:
-- Create a `.hopper/scripts` directory in your repo
-- Download the `hpr` script
+- Create a `.chalk/scripts` directory in your repo
+- Download the `task` script
 - Add it to your `PATH`
 
-After installing, open a new terminal or run `source ~/.bashrc` (or `~/.zshrc`) to start using the `hpr` command.
+After installing, open a new terminal or run `source ~/.bashrc` (or `~/.zshrc`) to start using the `task` command.
 
 ## Tasks Overview
 
@@ -40,7 +40,7 @@ Each task has a **type**, **status**, and **priority**.
 | `blocked` | Blocked by dependencies |
 | `deferred` | Deferred for later |
 
-Tasks can also be closed via `hpr close`.
+Tasks can also be closed via `task close`.
 
 ### Priorities
 
@@ -63,17 +63,17 @@ set -euo pipefail
 # Derive paths from script location, independent of env vars
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
-HPR_DIR="$PROJECT_DIR/.hopper/scripts"
+TASK_DIR="$PROJECT_DIR/.chalk/scripts"
 
-# Add hpr script to PATH for this session
+# Add task script to PATH for this session
 if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
    Harness supports env file injection — write an absolute path (not $CLAUDE_PROJECT_DIR)
-  echo "export PATH=\"$HPR_DIR:\$PATH\"" >> "$CLAUDE_ENV_FILE"
+  echo "export PATH=\"$TASK_DIR:\$PATH\"" >> "$CLAUDE_ENV_FILE"
 else
   # Fallback: symlink into a directory already on PATH
   LOCAL_BIN="$HOME/.local/bin"
   mkdir -p "$LOCAL_BIN"
-  ln -sf "$HPR_DIR/hpr" "$LOCAL_BIN/hpr"
+  ln -sf "$TASK_DIR/task" "$LOCAL_BIN/task"
 fi
 ```
 
