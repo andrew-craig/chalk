@@ -1,8 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(task:*)",
-      "Bash(bash ./scripts/task:*)"
+      "Bash(chalk:*)",
+      "Bash(bash ./scripts/chalk:*)"
 
     ]
   },

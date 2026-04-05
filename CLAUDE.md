@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Chalk is a file-based task management system built for AI agents. It provides a single bash CLI tool (`task`) that stores tasks as markdown files with YAML frontmatter in a `tasks/` directory.
+Chalk is a file-based task management system built for AI agents. It provides a single bash CLI tool (`chalk`) that stores tasks as markdown files with YAML frontmatter in a `tasks/` directory.
 
 ## Repository Structure
 
@@ -12,7 +12,7 @@ chalk/
 ├── LICENSE            # MIT License
 ├── README.md          # Project description
 ├── scripts/
-│   └── task           # Main CLI tool (bash script, invoked as `task`)
+│   └── chalk          # Main CLI tool (bash script, invoked as `chalk`)
 └── tasks/             # Task storage (created at runtime)
     └── closed/        # Archived closed tasks
 ```
@@ -21,26 +21,26 @@ chalk/
 
 ```bash
 # Run directly
-./scripts/task <command> [args]
+./scripts/chalk <command> [args]
 
-# Or add to PATH and use as `task`
+# Or add to PATH and use as `chalk`
 export PATH="$PATH:$(git rev-parse --show-toplevel)/scripts"
-task <command> [args]
+chalk <command> [args]
 ```
 
-The tasks directory location can be overridden with the `task_DIR` environment variable.
+The tasks directory location can be overridden with the `CHALK_DIR` environment variable.
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `task create "title" [opts]` | Create a new task |
-| `task show <id>` | Display full task details |
-| `task list [filters]` | List tasks with optional filters |
-| `task update <id> [fields]` | Update task fields |
-| `task close <id>` | Close a task (moves to `tasks/closed/`) |
-| `task ready` | Show open unblocked tasks sorted by priority |
-| `task help` | Show usage information |
+| `chalk create "title" [opts]` | Create a new task |
+| `chalk show <id>` | Display full task details |
+| `chalk list [filters]` | List tasks with optional filters |
+| `chalk update <id> [fields]` | Update task fields |
+| `chalk close <id>` | Close a task (moves to `tasks/closed/`) |
+| `chalk ready` | Show open unblocked tasks sorted by priority |
+| `chalk help` | Show usage information |
 
 ## Task File Format
 
@@ -89,7 +89,7 @@ Optional description body here.
 
 ## Code Architecture
 
-The script (`scripts/task`) is organized into three sections:
+The script (`scripts/chalk`) is organized into three sections:
 
 1. **Helpers** (lines 14–114): Utility functions for ID generation, YAML field reading/writing, task lookup, validation, and table formatting
 2. **Commands** (lines 118–492): One `cmd_*` function per subcommand (`create`, `show`, `list`, `update`, `close`, `ready`, `help`)

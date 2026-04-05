@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# task - File-based task management for agents
+# chalk - File-based task management for agents
 # Tasks stored as markdown files with YAML frontmatter in .chalk/tasks/
 set -euo pipefail
 
 # Locate repo root and tasks directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || git rev-parse --show-toplevel)"
-TASKS_DIR="${task_DIR:-$REPO_ROOT/.chalk/tasks}"
+TASKS_DIR="${CHALK_DIR:-$REPO_ROOT/.chalk/tasks}"
 CLOSED_DIR="$TASKS_DIR/closed"
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -188,7 +188,7 @@ validate_priority() {
 validate_status() {
     local s="$1"
     if ! echo "$VALID_STATUSES" | grep -qw "$s"; then
-        echo "ERROR: invalid status '$s'. Valid statuses: $VALID_STATUSES (use 'task close' to close a task)" >&2
+        echo "ERROR: invalid status '$s'. Valid statuses: $VALID_STATUSES (use 'chalk close' to close a task)" >&2
         return 1
     fi
 }
@@ -235,7 +235,7 @@ cmd_create() {
     done
 
     if [[ -z "$title" ]]; then
-        echo "ERROR: title is required. Usage: task create \"Task title\" [--type=task] [--priority=2] [--description=\"...\"]" >&2
+        echo "ERROR: title is required. Usage: chalk create \"Task title\" [--type=task] [--priority=2] [--description=\"...\"]" >&2
         return 1
     fi
 
@@ -285,7 +285,7 @@ MDEOF
 
 cmd_show() {
     if [[ $# -eq 0 ]]; then
-        echo "ERROR: task ID required. Usage: task show <id>" >&2
+        echo "ERROR: task ID required. Usage: chalk show <id>" >&2
         return 1
     fi
 
@@ -363,7 +363,7 @@ cmd_list() {
 
 cmd_update() {
     if [[ $# -eq 0 ]]; then
-        echo "ERROR: task ID required. Usage: task update <id> [--status=] [--priority=] [--title=] [--labels=] [--blocked_by=] [--parent=]" >&2
+        echo "ERROR: task ID required. Usage: chalk update <id> [--status=] [--priority=] [--title=] [--labels=] [--blocked_by=] [--parent=]" >&2
         return 1
     fi
 
@@ -457,7 +457,7 @@ cmd_update() {
 
 cmd_close() {
     if [[ $# -eq 0 ]]; then
-        echo "ERROR: task ID required. Usage: task close <id>" >&2
+        echo "ERROR: task ID required. Usage: chalk close <id>" >&2
         return 1
     fi
 
@@ -546,7 +546,7 @@ cmd_ghi() {
     require_gh || return 1
 
     if [[ $# -eq 0 ]]; then
-        echo "ERROR: subcommand required. Usage: task ghi {clone|sync|push}" >&2
+        echo "ERROR: subcommand required. Usage: chalk ghi {clone|sync|push}" >&2
         return 1
     fi
 
@@ -635,7 +635,7 @@ ghi_push() {
     done
 
     if [[ -z "$task_id" ]] && ! $all; then
-        echo "ERROR: task ID required, or use -a to push all tasks. Usage: task ghi push <id> | -a" >&2
+        echo "ERROR: task ID required, or use -a to push all tasks. Usage: chalk ghi push <id> | -a" >&2
         return 1
     fi
 
@@ -828,10 +828,10 @@ ghi_sync() {
 
 cmd_help() {
     cat << 'HELP'
-task - file-based task management
+chalk - file-based task management
 
 USAGE
-  task <command> [args]
+  chalk <command> [args]
 
 COMMANDS
   create "title"              Create a new task
@@ -879,12 +879,12 @@ FRONTMATTER FIELDS
   remote_task_url, created_at, updated_at
 
 EXAMPLES
-  task create "Fix login bug" --type=bug --priority=1
-  task update bug_a3f2 --status=in_progress
-  task update task_ed8f --blocked_by=bug_a3f2
-  task close task_ed8f
-  task list --status=open --type=bug
-  task ready
+  chalk create "Fix login bug" --type=bug --priority=1
+  chalk update bug_a3f2 --status=in_progress
+  chalk update task_ed8f --blocked_by=bug_a3f2
+  chalk close task_ed8f
+  chalk list --status=open --type=bug
+  chalk ready
 HELP
 }
 
@@ -906,7 +906,7 @@ case "$cmd" in
     ghi)    cmd_ghi    "$@" ;;
     help|--help|-h) cmd_help ;;
     *)
-        echo "ERROR: unknown command '$cmd'. Valid commands: create show list update close ready ghi" >&2
+        echo "ERROR: unknown command '$cmd'. Run 'chalk help' for usage." >&2
         exit 1
         ;;
 esac

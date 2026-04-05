@@ -11,10 +11,10 @@ curl -fsSL https://raw.githubusercontent.com/andrew-craig/chalk/main/install.sh 
 
 This will:
 - Create a `.chalk/scripts` directory in your repo
-- Download the `task` script
+- Download the `chalk` script
 - Add it to your `PATH`
 
-After installing, open a new terminal or run `source ~/.bashrc` (or `~/.zshrc`) to start using the `task` command.
+After installing, open a new terminal or run `source ~/.bashrc` (or `~/.zshrc`) to start using the `chalk` command.
 
 ## Tasks Overview
 
@@ -40,7 +40,7 @@ Each task has a **type**, **status**, and **priority**.
 | `blocked` | Blocked by dependencies |
 | `deferred` | Deferred for later |
 
-Tasks can also be closed via `task close`.
+Tasks can also be closed via `chalk close`.
 
 ### Priorities
 
@@ -73,7 +73,7 @@ else
   # Fallback: symlink into a directory already on PATH
   LOCAL_BIN="$HOME/.local/bin"
   mkdir -p "$LOCAL_BIN"
-  ln -sf "$TASK_DIR/task" "$LOCAL_BIN/task"
+  ln -sf "$TASK_DIR/chalk" "$LOCAL_BIN/chalk"
 fi
 ```
 

@@ -4,7 +4,7 @@ set -euo pipefail
 CHALK_DIR=".chalk"
 SCRIPTS_DIR="$CHALK_DIR/scripts"
 TASKS_DIR="$CHALK_DIR/tasks"
-TASK_SCRIPT_URL="https://raw.githubusercontent.com/andrew-craig/chalk/main/scripts/task"
+TASK_SCRIPT_URL="https://raw.githubusercontent.com/andrew-craig/chalk/main/scripts/chalk"
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -43,10 +43,10 @@ create_chalk_dir() {
     info "Created $TASKS_DIR"
 }
 
-# ── Step 3: Download the task script ─────────────────────────────────────────
+# ── Step 3: Download the chalk script ────────────────────────────────────────
 
 download_task_script() {
-    local dest="$SCRIPTS_DIR/task"
+    local dest="$SCRIPTS_DIR/chalk"
 
     if command -v curl >/dev/null 2>&1; then
         curl -fsSL "$TASK_SCRIPT_URL" -o "$dest"
@@ -58,7 +58,7 @@ download_task_script() {
     fi
 
     chmod +x "$dest"
-    info "Downloaded task script to $dest"
+    info "Downloaded chalk script to $dest"
 }
 
 # ── Step 4: Add scripts directory to PATH ────────────────────────────────────
@@ -92,7 +92,7 @@ add_to_path() {
         info "Added $scripts_path to PATH in $shell_rc"
     fi
 
-    info "Run 'source $shell_rc' or open a new terminal to use the 'task' command"
+    info "Run 'source $shell_rc' or open a new terminal to use the 'chalk' command"
 }
 
 # ── Main ─────────────────────────────────────────────────────────────────────

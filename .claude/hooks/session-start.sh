@@ -14,5 +14,5 @@ else
   # Fallback: symlink into a directory already on PATH
   LOCAL_BIN="$HOME/.local/bin"
   mkdir -p "$LOCAL_BIN"
-  ln -sf "$TASK_DIR/task" "$LOCAL_BIN/task"
+  ln -sf "$TASK_DIR/chalk" "$LOCAL_BIN/chalk"
 fi  
