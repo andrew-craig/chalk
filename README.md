@@ -40,7 +40,7 @@ Each task has a **type**, **status**, and **priority**.
 | `blocked` | Blocked by dependencies |
 | `deferred` | Deferred for later |
 
-Tasks can also be closed via `tsk close`.
+Tasks can also be closed via `task close`.
 
 ### Priorities
 
@@ -65,7 +65,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 TASK_DIR="$PROJECT_DIR/.chalk/scripts"
 
-# Add tsk script to PATH for this session
+# Add task script to PATH for this session
 if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
    Harness supports env file injection — write an absolute path (not $CLAUDE_PROJECT_DIR)
   echo "export PATH=\"$TASK_DIR:\$PATH\"" >> "$CLAUDE_ENV_FILE"

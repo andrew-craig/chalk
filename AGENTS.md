@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Chalk is a file-based task management system built for AI agents. It provides a single bash CLI tool (`tsk`) that stores tasks as markdown files with YAML frontmatter in a `tasks/` directory.
+Chalk is a file-based task management system built for AI agents. It provides a single bash CLI tool (`task`) that stores tasks as markdown files with YAML frontmatter in a `tasks/` directory.
 
 ## Repository Structure
 
@@ -12,7 +12,7 @@ chalk/
 ├── LICENSE            # MIT License
 ├── README.md          # Project description
 ├── scripts/
-│   └── task           # Main CLI tool (bash script, invoked as `tsk`)
+│   └── task           # Main CLI tool (bash script, invoked as `task`)
 └── tasks/             # Task storage (created at runtime)
     └── closed/        # Archived closed tasks
 ```
@@ -23,24 +23,24 @@ chalk/
 # Run directly
 ./scripts/task <command> [args]
 
-# Or add to PATH and use as `tsk`
+# Or add to PATH and use as `task`
 export PATH="$PATH:$(git rev-parse --show-toplevel)/scripts"
-tsk <command> [args]
+task <command> [args]
 ```
 
-The tasks directory location can be overridden with the `TSK_DIR` environment variable.
+The tasks directory location can be overridden with the `task_DIR` environment variable.
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `tsk create "title" [opts]` | Create a new task |
-| `tsk show <id>` | Display full task details |
-| `tsk list [filters]` | List tasks with optional filters |
-| `tsk update <id> [fields]` | Update task fields |
-| `tsk close <id>` | Close a task (moves to `tasks/closed/`) |
-| `tsk ready` | Show open unblocked tasks sorted by priority |
-| `tsk help` | Show usage information |
+| `task create "title" [opts]` | Create a new task |
+| `task show <id>` | Display full task details |
+| `task list [filters]` | List tasks with optional filters |
+| `task update <id> [fields]` | Update task fields |
+| `task close <id>` | Close a task (moves to `tasks/closed/`) |
+| `task ready` | Show open unblocked tasks sorted by priority |
+| `task help` | Show usage information |
 
 ## Task File Format
 
