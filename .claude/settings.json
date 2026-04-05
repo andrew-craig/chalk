@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(task:*)"
+      "Bash(task:*)",
+      "Bash(bash ./scripts/task:*)"
+
     ]
   },
   "hooks": {
