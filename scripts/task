@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# hpr - File-based task management for agents
-# Tasks stored as markdown files with YAML frontmatter in .hopper/tasks/
+# task - File-based task management for agents
+# Tasks stored as markdown files with YAML frontmatter in .chalk/tasks/
 set -euo pipefail
 
 # Locate repo root and tasks directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || git rev-parse --show-toplevel)"
-TASKS_DIR="${HPR_DIR:-$REPO_ROOT/.hopper/tasks}"
+TASKS_DIR="${task_DIR:-$REPO_ROOT/.chalk/tasks}"
 CLOSED_DIR="$TASKS_DIR/closed"
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -188,7 +188,7 @@ validate_priority() {
 validate_status() {
     local s="$1"
     if ! echo "$VALID_STATUSES" | grep -qw "$s"; then
-        echo "ERROR: invalid status '$s'. Valid statuses: $VALID_STATUSES (use 'hpr close' to close a task)" >&2
+        echo "ERROR: invalid status '$s'. Valid statuses: $VALID_STATUSES (use 'task close' to close a task)" >&2
         return 1
     fi
 }
@@ -235,7 +235,7 @@ cmd_create() {
     done
 
     if [[ -z "$title" ]]; then
-        echo "ERROR: title is required. Usage: hpr create \"Task title\" [--type=task] [--priority=2] [--description=\"...\"]" >&2
+        echo "ERROR: title is required. Usage: task create \"Task title\" [--type=task] [--priority=2] [--description=\"...\"]" >&2
         return 1
     fi
 
@@ -285,7 +285,7 @@ MDEOF
 
 cmd_show() {
     if [[ $# -eq 0 ]]; then
-        echo "ERROR: task ID required. Usage: hpr show <id>" >&2
+        echo "ERROR: task ID required. Usage: task show <id>" >&2
         return 1
     fi
 
@@ -363,7 +363,7 @@ cmd_list() {
 
 cmd_update() {
     if [[ $# -eq 0 ]]; then
-        echo "ERROR: task ID required. Usage: hpr update <id> [--status=] [--priority=] [--title=] [--labels=] [--blocked_by=] [--parent=]" >&2
+        echo "ERROR: task ID required. Usage: task update <id> [--status=] [--priority=] [--title=] [--labels=] [--blocked_by=] [--parent=]" >&2
         return 1
     fi
 
@@ -457,7 +457,7 @@ cmd_update() {
 
 cmd_close() {
     if [[ $# -eq 0 ]]; then
-        echo "ERROR: task ID required. Usage: hpr close <id>" >&2
+        echo "ERROR: task ID required. Usage: task close <id>" >&2
         return 1
     fi
 
@@ -546,7 +546,7 @@ cmd_ghi() {
     require_gh || return 1
 
     if [[ $# -eq 0 ]]; then
-        echo "ERROR: subcommand required. Usage: hpr ghi {clone|sync|push}" >&2
+        echo "ERROR: subcommand required. Usage: task ghi {clone|sync|push}" >&2
         return 1
     fi
 
@@ -635,7 +635,7 @@ ghi_push() {
     done
 
     if [[ -z "$task_id" ]] && ! $all; then
-        echo "ERROR: task ID required, or use -a to push all tasks. Usage: hpr ghi push <id> | -a" >&2
+        echo "ERROR: task ID required, or use -a to push all tasks. Usage: task ghi push <id> | -a" >&2
         return 1
     fi
 
@@ -828,10 +828,10 @@ ghi_sync() {
 
 cmd_help() {
     cat << 'HELP'
-hpr - file-based task management
+task - file-based task management
 
 USAGE
-  hpr <command> [args]
+  task <command> [args]
 
 COMMANDS
   create "title"              Create a new task
@@ -848,7 +848,7 @@ COMMANDS
     --status=STATUS           Filter by status (open|in_progress|blocked|deferred)
     --type=TYPE               Filter by type
     --priority=N              Filter by priority
-    --closed                  Include closed tasks (from .hopper/tasks/closed/)
+    --closed                  Include closed tasks (from .chalk/tasks/closed/)
 
   update <id>                 Update task fields
     --status=STATUS           open|in_progress|blocked|deferred
@@ -859,7 +859,7 @@ COMMANDS
     --blocked_by=id1,id2      Set to empty string to clear: --blocked_by=
     --parent=id
 
-  close <id>                  Mark task closed and move to .hopper/tasks/closed/
+  close <id>                  Mark task closed and move to .chalk/tasks/closed/
 
   ready                       Show open tasks sorted by priority
 
@@ -871,20 +871,20 @@ COMMANDS
                               Syncs all linked tasks if no ID given
 
 FILES
-  .hopper/tasks/<type>_<id>.md        Active tasks
-  .hopper/tasks/closed/<type>_<id>.md Closed tasks
+  .chalk/tasks/<type>_<id>.md        Active tasks
+  .chalk/tasks/closed/<type>_<id>.md Closed tasks
 
 FRONTMATTER FIELDS
   id, title, type, status, priority, labels, blocked_by, parent,
   remote_task_url, created_at, updated_at
 
 EXAMPLES
-  hpr create "Fix login bug" --type=bug --priority=1
-  hpr update bug_a3f2 --status=in_progress
-  hpr update task_ed8f --blocked_by=bug_a3f2
-  hpr close task_ed8f
-  hpr list --status=open --type=bug
-  hpr ready
+  task create "Fix login bug" --type=bug --priority=1
+  task update bug_a3f2 --status=in_progress
+  task update task_ed8f --blocked_by=bug_a3f2
+  task close task_ed8f
+  task list --status=open --type=bug
+  task ready
 HELP
 }
 
