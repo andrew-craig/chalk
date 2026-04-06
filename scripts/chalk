@@ -4,8 +4,7 @@
 set -euo pipefail
 
 # Locate repo root and tasks directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || git rev-parse --show-toplevel)"
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo "$PWD")"
 TASKS_DIR="${CHALK_DIR:-$REPO_ROOT/.chalk/tasks}"
 CLOSED_DIR="$TASKS_DIR/closed"
 
@@ -844,6 +843,31 @@ ghi_sync() {
     echo "sync complete: $synced synced, $errors errors"
 }
 
+cmd_init() {
+    local repo_root
+    repo_root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+
+    if [[ -z "$repo_root" ]]; then
+        echo "WARNING: not inside a git repository. Initializing in current directory." >&2
+        repo_root="$PWD"
+    elif [[ "$repo_root" != "$PWD" ]]; then
+        echo "ERROR: run 'chalk init' from the repo root." >&2
+        echo "  Repo root: $repo_root" >&2
+        echo "  Current dir: $PWD" >&2
+        return 1
+    fi
+
+    local tasks_dir="${CHALK_DIR:-$repo_root/.chalk/tasks}"
+
+    if [[ -d "$tasks_dir" ]]; then
+        echo "chalk already initialized ($tasks_dir)"
+        return 0
+    fi
+
+    mkdir -p "$tasks_dir/closed"
+    echo "initialized chalk at $tasks_dir"
+}
+
 cmd_help() {
     cat << 'HELP'
 chalk - file-based task management
@@ -852,6 +876,8 @@ USAGE
   chalk <command> [args]
 
 COMMANDS
+  init                        Initialize chalk in the current git repo
+
   create "title"              Create a new task
     --type=TYPE               task|bug|feature|chore|epic|decision (default: task)
     --priority=N              0=critical 1=high 2=medium 3=low 4=backlog (default: 2)
@@ -917,6 +943,7 @@ fi
 
 cmd="$1"; shift
 case "$cmd" in
+    init)   cmd_init   "$@" ;;
     create) cmd_create "$@" ;;
     show)   cmd_show   "$@" ;;
     list)   cmd_list   "$@" ;;
