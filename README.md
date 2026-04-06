@@ -1,5 +1,7 @@
 # chalk
-A very simple task management system built for agents
+A very simple task management system built for agents. 
+
+AI ALPHA NOTICE: This project is substantially coded by AI and is *in the process* of being thoroughly tested. If you are willing to test it out, I appreciate it, but do so at your own risk. Please create Github issues for bugs and feature requests.
 
 ## Installation
 
