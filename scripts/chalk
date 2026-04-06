@@ -305,15 +305,16 @@ cmd_show() {
 }
 
 cmd_list() {
-    local filter_status="" filter_type="" filter_priority="" include_closed=false
+    local filter_status="" filter_type="" filter_priority="" filter_parent="" include_closed=false
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --status=*)   filter_status="${1#*=}" ;;
             --type=*)     filter_type="${1#*=}" ;;
             --priority=*) filter_priority="${1#*=}" ;;
+            --parent=*)   filter_parent="${1#*=}" ;;
             --closed)     include_closed=true ;;
-            --*)          echo "ERROR: unknown option '$1'. Valid options: --status= --type= --priority= --closed" >&2; return 1 ;;
+            --*)          echo "ERROR: unknown option '$1'. Valid options: --status= --type= --priority= --parent= --closed" >&2; return 1 ;;
             *)            echo "ERROR: unexpected argument '$1'" >&2; return 1 ;;
         esac
         shift
@@ -343,10 +344,12 @@ cmd_list() {
         local status; status=$(get_field "$file" "status")
         local type;   type=$(get_field "$file" "type")
         local prio;   prio=$(get_field "$file" "priority")
+        local par;    par=$(get_field "$file" "parent")
 
         [[ -n "$filter_status"   && "$status" != "$filter_status"   ]] && continue
         [[ -n "$filter_type"     && "$type"   != "$filter_type"     ]] && continue
         [[ -n "$filter_priority" && "$prio"   != "$filter_priority" ]] && continue
+        [[ -n "$filter_parent"   && "$par"    != "$filter_parent"   ]] && continue
 
         if ! $header_printed; then
             print_header
@@ -513,6 +516,17 @@ cmd_close() {
 }
 
 cmd_ready() {
+    local filter_parent=""
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --parent=*) filter_parent="${1#*=}" ;;
+            --*)        echo "ERROR: unknown option '$1'. Valid options: --parent=" >&2; return 1 ;;
+            *)          echo "ERROR: unexpected argument '$1'" >&2; return 1 ;;
+        esac
+        shift
+    done
+
     [[ -d "$TASKS_DIR" ]] || { echo "no tasks directory found at $TASKS_DIR"; return 0; }
 
     # Collect open tasks with their priority for sorting
@@ -522,6 +536,10 @@ cmd_ready() {
         [[ "$status" == "open" ]] || continue
         local blocked; blocked=$(get_field "$f" "blocked_by")
         [[ -z "$blocked" || "$blocked" == "[]" ]] || continue
+        if [[ -n "$filter_parent" ]]; then
+            local par; par=$(get_field "$f" "parent")
+            [[ "$par" == "$filter_parent" ]] || continue
+        fi
         local prio; prio=$(get_field "$f" "priority")
         pairs+=("${prio}:${f}")
     done < <(find "$TASKS_DIR" -maxdepth 1 -name "*.md" -not -name ".gitkeep" -print0 2>/dev/null)
@@ -848,6 +866,7 @@ COMMANDS
     --status=STATUS           Filter by status (open|in_progress|blocked|deferred)
     --type=TYPE               Filter by type
     --priority=N              Filter by priority
+    --parent=id               Filter by parent task ID
     --closed                  Include closed tasks (from .chalk/tasks/closed/)
 
   update <id>                 Update task fields
@@ -862,6 +881,7 @@ COMMANDS
   close <id>                  Mark task closed and move to .chalk/tasks/closed/
 
   ready                       Show open tasks sorted by priority
+    --parent=id               Filter by parent task ID
 
   ghi clone                   Clone open GitHub issues as local tasks
     --limit=N                 Max issues to fetch (default: 500)
