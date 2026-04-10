@@ -279,7 +279,6 @@ $body
 MDEOF
 
     echo "created: $id"
-    echo "file: $TASKS_DIR/${id}.md"
 }
 
 cmd_show() {
