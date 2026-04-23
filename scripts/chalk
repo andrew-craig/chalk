@@ -493,24 +493,46 @@ cmd_close() {
             # Use awk (not grep -v) so exit code is 0 even when all entries are removed
             new_blocked=$(echo "$raw_blocked" | tr -d '[]' | tr ',' '\n' | \
                 awk -v id="$id" 'NF && $0 != id' | tr '\n' ',' | sed 's/^,//;s/,$//')
+            local dep_id; dep_id=$(basename "$dependent" .md)
+            local dep_title; dep_title=$(get_field "$dependent" "title")
             if [[ -z "$new_blocked" ]]; then
                 update_field "$dependent" "blocked_by" "[]"
                 # If task was blocked, flip it back to open
                 if [[ "$(get_field "$dependent" "status")" == "blocked" ]]; then
                     update_field "$dependent" "status" "open"
                     update_field "$dependent" "updated_at" "$now"
-                    echo "unblocked: $(basename "$dependent" .md) (status → open)"
+                    echo "unblocked: $dep_id \"$dep_title\" (status → open)"
                 else
                     update_field "$dependent" "updated_at" "$now"
-                    echo "unblocked: $(basename "$dependent" .md)"
+                    echo "unblocked: $dep_id \"$dep_title\""
                 fi
             else
                 update_field "$dependent" "blocked_by" "[$new_blocked]"
                 update_field "$dependent" "updated_at" "$now"
-                echo "unblocked: $(basename "$dependent" .md) (still blocked by: $new_blocked)"
+                echo "unblocked: $dep_id \"$dep_title\" (still blocked by: $new_blocked)"
             fi
         fi
     done < <(find "$TASKS_DIR" -maxdepth 1 -name "*.md" -not -name ".gitkeep" -print0 2>/dev/null)
+
+    # Epic completion: if the closed task belongs to a parent, check if all siblings are now closed
+    local parent; parent=$(get_field "$CLOSED_DIR/$filename" "parent")
+    if [[ -n "$parent" && "$parent" != "null" ]]; then
+        local remaining=0
+        while IFS= read -r -d '' sibling; do
+            local sib_parent; sib_parent=$(get_field "$sibling" "parent")
+            [[ "$sib_parent" == "$parent" ]] && ((remaining++)) || true
+        done < <(find "$TASKS_DIR" -maxdepth 1 -name "*.md" -not -name ".gitkeep" -print0 2>/dev/null)
+
+        if [[ $remaining -eq 0 ]]; then
+            local parent_file parent_title=""
+            if parent_file=$(find_task "$parent" 2>/dev/null); then
+                parent_title=$(get_field "$parent_file" "title")
+                echo "complete: $parent \"$parent_title\" — no open sub-tasks remaining"
+            else
+                echo "complete: $parent — no open sub-tasks remaining"
+            fi
+        fi
+    fi
 }
 
 cmd_ready() {
