@@ -79,7 +79,7 @@ find_task() {
             return 0
         fi
     done
-    echo "ERROR: task '$id' not found (searched $TASKS_DIR and $CLOSED_DIR)" >&2
+    echo "ERROR: task '$id' not found (searched $TASKS_DIR and $CLOSED_DIR). Run 'chalk list' to see available task IDs." >&2
     return 1
 }
 
@@ -171,7 +171,7 @@ VALID_STATUSES="open in_progress blocked deferred"
 validate_type() {
     local t="$1"
     if ! echo "$VALID_TYPES" | grep -qw "$t"; then
-        echo "ERROR: invalid type '$t'. Valid types: $VALID_TYPES" >&2
+        echo "ERROR: invalid type '$t'. Valid types: $VALID_TYPES Example: chalk create \"title\" --type=bug" >&2
         return 1
     fi
 }
@@ -179,7 +179,7 @@ validate_type() {
 validate_priority() {
     local p="$1"
     if ! [[ "$p" =~ ^[0-4]$ ]]; then
-        echo "ERROR: invalid priority '$p'. Must be 0-4 (0=critical 1=high 2=medium 3=low 4=backlog)" >&2
+        echo "ERROR: invalid priority '$p'. Must be 0-4 (0=critical 1=high 2=medium 3=low 4=backlog) Example: chalk update <id> --priority=1" >&2
         return 1
     fi
 }
@@ -187,7 +187,7 @@ validate_priority() {
 validate_status() {
     local s="$1"
     if ! echo "$VALID_STATUSES" | grep -qw "$s"; then
-        echo "ERROR: invalid status '$s'. Valid statuses: $VALID_STATUSES (use 'chalk close' to close a task)" >&2
+        echo "ERROR: invalid status '$s'. Valid statuses: $VALID_STATUSES (use 'chalk close' to close a task) Example: chalk update <id> --status=in_progress" >&2
         return 1
     fi
 }
@@ -304,6 +304,7 @@ cmd_show() {
 
 cmd_list() {
     local filter_status="" filter_type="" filter_priority="" filter_parent="" include_closed=false
+    local limit=50
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -312,7 +313,8 @@ cmd_list() {
             --priority=*) filter_priority="${1#*=}" ;;
             --parent=*)   filter_parent="${1#*=}" ;;
             --closed)     include_closed=true ;;
-            --*)          echo "ERROR: unknown option '$1'. Valid options: --status= --type= --priority= --parent= --closed" >&2; return 1 ;;
+            --limit=*)    limit="${1#*=}" ;;
+            --*)          echo "ERROR: unknown option '$1'. Valid options: --status= --type= --priority= --parent= --closed --limit= Example: chalk list --status=open --type=bug" >&2; return 1 ;;
             *)            echo "ERROR: unexpected argument '$1'" >&2; return 1 ;;
         esac
         shift
@@ -336,8 +338,8 @@ cmd_list() {
         return 0
     fi
 
-    local shown=0
-    local header_printed=false
+    # Apply filters and collect matching files
+    local -a matched=()
     for file in "${files[@]}"; do
         local status; status=$(get_field "$file" "status")
         local type;   type=$(get_field "$file" "type")
@@ -349,16 +351,30 @@ cmd_list() {
         [[ -n "$filter_priority" && "$prio"   != "$filter_priority" ]] && continue
         [[ -n "$filter_parent"   && "$par"    != "$filter_parent"   ]] && continue
 
-        if ! $header_printed; then
-            print_header
-            header_printed=true
-        fi
-        print_task_row "$file"
-        shown=$((shown + 1))
+        matched+=("$file")
     done
 
-    if [[ $shown -eq 0 ]]; then
+    local total=${#matched[@]}
+    if [[ $total -eq 0 ]]; then
         echo "no tasks match the specified filters"
+        return 0
+    fi
+
+    # Determine how many to display
+    local display_count=$total
+    if [[ $limit -gt 0 && $total -gt $limit ]]; then
+        display_count=$limit
+    fi
+
+    print_header
+    local i=0
+    while [[ $i -lt $display_count ]]; do
+        print_task_row "${matched[$i]}"
+        i=$((i + 1))
+    done
+
+    if [[ $limit -gt 0 && $total -gt $limit ]]; then
+        echo "--- showing $limit of $total tasks. Use --status= --type= --priority= --parent= to filter. ---"
     fi
 }
 
@@ -372,7 +388,7 @@ cmd_update() {
     local file; file=$(find_task "$id") || return 1
 
     if [[ "$(get_field "$file" "status")" == "closed" ]]; then
-        echo "ERROR: task '$id' is closed and cannot be updated. Re-open by editing the file directly." >&2
+        echo "ERROR: task '$id' is closed and cannot be updated. Use 'chalk list --closed' to inspect it, or 'chalk create' to start a new task." >&2
         return 1
     fi
 
@@ -436,7 +452,7 @@ cmd_update() {
                 updated=true
                 ;;
             --*)
-                echo "ERROR: unknown option '$1'. Valid options: --status= --priority= --title= --type= --labels= --blocked_by= --parent= --remote_task_url=" >&2
+                echo "ERROR: unknown option '$1'. Valid options: --status= --priority= --title= --type= --labels= --blocked_by= --parent= --remote_task_url= Example: chalk update <id> --status=in_progress" >&2
                 return 1
                 ;;
             *)
@@ -466,7 +482,7 @@ cmd_close() {
     local file; file=$(find_task "$id") || return 1
 
     if [[ "$(get_field "$file" "status")" == "closed" ]]; then
-        echo "ERROR: task '$id' is already closed" >&2
+        echo "ERROR: task '$id' is already closed. Use 'chalk list --closed' to see closed tasks." >&2
         return 1
     fi
 
@@ -893,6 +909,7 @@ COMMANDS
     --priority=N              Filter by priority
     --parent=id               Filter by parent task ID
     --closed                  Include closed tasks (from .chalk/tasks/closed/)
+    --limit=N                 Max rows to show (default: 50; use 0 for unlimited)
 
   update <id>                 Update task fields
     --status=STATUS           open|in_progress|blocked|deferred
@@ -940,7 +957,27 @@ if [[ $# -eq 0 ]]; then
     exit 0
 fi
 
-cmd="$1"; shift
+cmd="$1"
+
+# Help commands are for humans — no footer
+case "$cmd" in
+    help|--help|-h)
+        shift
+        cmd_help
+        exit 0
+        ;;
+esac
+
+# Record start time and install EXIT trap for metadata footer
+_CHALK_START=$SECONDS
+_chalk_exit_footer() {
+    local code=$?
+    local elapsed=$(( (SECONDS - _CHALK_START) * 1000 ))
+    echo "[exit:${code} | ${elapsed}ms]"
+}
+trap _chalk_exit_footer EXIT
+
+shift
 case "$cmd" in
     init)   cmd_init   "$@" ;;
     create) cmd_create "$@" ;;
@@ -950,7 +987,6 @@ case "$cmd" in
     close)  cmd_close  "$@" ;;
     ready)  cmd_ready  "$@" ;;
     ghi)    cmd_ghi    "$@" ;;
-    help|--help|-h) cmd_help ;;
     *)
         echo "ERROR: unknown command '$cmd'. Run 'chalk help' for usage." >&2
         exit 1
