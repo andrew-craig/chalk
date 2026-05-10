@@ -347,7 +347,7 @@ HELP
 
 cmd_list() {
     local filter_status="" filter_type="" filter_priority="" filter_parent="" include_closed=false
-    local limit=50
+    local limit=50 output=""
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -357,6 +357,7 @@ cmd_list() {
             --parent=*)   filter_parent="${1#*=}" ;;
             --closed)     include_closed=true ;;
             --limit=*)    limit="${1#*=}" ;;
+            --output=*)   output="${1#*=}" ;;
             --help|-h)    cat << 'HELP'
 chalk list [options]
 
@@ -366,6 +367,7 @@ chalk list [options]
   --parent=id               Filter by parent task ID
   --closed                  Include closed tasks
   --limit=N                 Max rows to show (default: 50; use 0 for unlimited)
+  --output=ids              Emit one task ID per line (machine-readable)
 
 EXAMPLES
   chalk list --status=open --type=bug
@@ -373,11 +375,16 @@ EXAMPLES
   chalk list --closed
 HELP
                 return 0 ;;
-            --*)          echo "ERROR: unknown option '$1'. Valid options: --status= --type= --priority= --parent= --closed --limit= Example: chalk list --status=open --type=bug" >&2; return 1 ;;
+            --*)          echo "ERROR: unknown option '$1'. Valid options: --status= --type= --priority= --parent= --closed --limit= --output= Example: chalk list --status=open --type=bug" >&2; return 1 ;;
             *)            echo "ERROR: unexpected argument '$1'" >&2; return 1 ;;
         esac
         shift
     done
+
+    if [[ -n "$output" && "$output" != "ids" ]]; then
+        echo "ERROR: invalid --output value '$output'. Valid values: ids" >&2
+        return 1
+    fi
 
     [[ -d "$TASKS_DIR" ]] || { echo "No tasks directory found at $TASKS_DIR"; return 0; }
 
@@ -415,7 +422,7 @@ HELP
 
     local total=${#matched[@]}
     if [[ $total -eq 0 ]]; then
-        echo "no tasks match the specified filters"
+        [[ "$output" != "ids" ]] && echo "no tasks match the specified filters"
         return 0
     fi
 
@@ -425,15 +432,22 @@ HELP
         display_count=$limit
     fi
 
-    print_header
-    local i=0
-    while [[ $i -lt $display_count ]]; do
-        print_task_row "${matched[$i]}"
-        i=$((i + 1))
-    done
-
-    if [[ $limit -gt 0 && $total -gt $limit ]]; then
-        echo "--- showing $limit of $total tasks. Use --status= --type= --priority= --parent= to filter. ---"
+    if [[ "$output" == "ids" ]]; then
+        local i=0
+        while [[ $i -lt $display_count ]]; do
+            basename "${matched[$i]}" .md
+            i=$((i + 1))
+        done
+    else
+        print_header
+        local i=0
+        while [[ $i -lt $display_count ]]; do
+            print_task_row "${matched[$i]}"
+            i=$((i + 1))
+        done
+        if [[ $limit -gt 0 && $total -gt $limit ]]; then
+            echo "--- showing $limit of $total tasks. Use --status= --type= --priority= --parent= to filter. ---"
+        fi
     fi
 }
 
@@ -583,49 +597,79 @@ cmd_close() {
             # Use awk (not grep -v) so exit code is 0 even when all entries are removed
             new_blocked=$(echo "$raw_blocked" | tr -d '[]' | tr ',' '\n' | \
                 awk -v id="$id" 'NF && $0 != id' | tr '\n' ',' | sed 's/^,//;s/,$//')
+            local dep_id; dep_id=$(basename "$dependent" .md)
+            local dep_title; dep_title=$(get_field "$dependent" "title")
             if [[ -z "$new_blocked" ]]; then
                 update_field "$dependent" "blocked_by" "[]"
                 # If task was blocked, flip it back to open
                 if [[ "$(get_field "$dependent" "status")" == "blocked" ]]; then
                     update_field "$dependent" "status" "open"
                     update_field "$dependent" "updated_at" "$now"
-                    echo "unblocked: $(basename "$dependent" .md) (status → open)"
+                    echo "unblocked: $dep_id \"$dep_title\" (status → open)"
                 else
                     update_field "$dependent" "updated_at" "$now"
-                    echo "unblocked: $(basename "$dependent" .md)"
+                    echo "unblocked: $dep_id \"$dep_title\""
                 fi
             else
                 update_field "$dependent" "blocked_by" "[$new_blocked]"
                 update_field "$dependent" "updated_at" "$now"
-                echo "unblocked: $(basename "$dependent" .md) (still blocked by: $new_blocked)"
+                echo "unblocked: $dep_id \"$dep_title\" (still blocked by: $new_blocked)"
             fi
         fi
     done < <(find "$TASKS_DIR" -maxdepth 1 -name "*.md" -not -name ".gitkeep" -print0 2>/dev/null)
+
+    # Epic completion: if the closed task belongs to a parent, check if all siblings are now closed
+    local parent; parent=$(get_field "$CLOSED_DIR/$filename" "parent")
+    if [[ -n "$parent" && "$parent" != "null" ]]; then
+        local remaining=0
+        while IFS= read -r -d '' sibling; do
+            local sib_parent; sib_parent=$(get_field "$sibling" "parent")
+            [[ "$sib_parent" == "$parent" ]] && ((remaining++)) || true
+        done < <(find "$TASKS_DIR" -maxdepth 1 -name "*.md" -not -name ".gitkeep" -print0 2>/dev/null)
+
+        if [[ $remaining -eq 0 ]]; then
+            local parent_file parent_title=""
+            if parent_file=$(find_task "$parent" 2>/dev/null); then
+                parent_title=$(get_field "$parent_file" "title")
+                echo "complete: $parent \"$parent_title\" — no open sub-tasks remaining"
+            else
+                echo "complete: $parent — no open sub-tasks remaining"
+            fi
+        fi
+    fi
 }
 
 cmd_ready() {
-    local filter_parent=""
+    local filter_parent="" output=""
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --parent=*) filter_parent="${1#*=}" ;;
-            --help|-h)  cat << 'HELP'
+            --parent=*)  filter_parent="${1#*=}" ;;
+            --output=*)  output="${1#*=}" ;;
+            --help|-h)   cat << 'HELP'
 chalk ready [options]
 
 Show open, unblocked tasks sorted by priority.
 
   --parent=id               Filter by parent task ID
+  --output=ids              Emit one task ID per line (machine-readable)
 
 EXAMPLES
   chalk ready
   chalk ready --parent=epic_a3f2
+  chalk ready --output=ids
 HELP
                 return 0 ;;
-            --*)        echo "ERROR: unknown option '$1'. Valid options: --parent=" >&2; return 1 ;;
-            *)          echo "ERROR: unexpected argument '$1'" >&2; return 1 ;;
+            --*)         echo "ERROR: unknown option '$1'. Valid options: --parent= --output=" >&2; return 1 ;;
+            *)           echo "ERROR: unexpected argument '$1'" >&2; return 1 ;;
         esac
         shift
     done
+
+    if [[ -n "$output" && "$output" != "ids" ]]; then
+        echo "ERROR: invalid --output value '$output'. Valid values: ids" >&2
+        return 1
+    fi
 
     [[ -d "$TASKS_DIR" ]] || { echo "no tasks directory found at $TASKS_DIR"; return 0; }
 
@@ -645,7 +689,7 @@ HELP
     done < <(find "$TASKS_DIR" -maxdepth 1 -name "*.md" -not -name ".gitkeep" -print0 2>/dev/null)
 
     if [[ ${#pairs[@]} -eq 0 ]]; then
-        echo "no open tasks"
+        [[ "$output" != "ids" ]] && echo "no open tasks"
         return 0
     fi
 
@@ -653,11 +697,18 @@ HELP
     local -a sorted
     IFS=$'\n' read -r -d '' -a sorted < <(printf '%s\n' "${pairs[@]}" | sort -t: -k1 -n && printf '\0') || true
 
-    print_header
-    for pair in "${sorted[@]}"; do
-        local file="${pair#*:}"
-        print_task_row "$file"
-    done
+    if [[ "$output" == "ids" ]]; then
+        for pair in "${sorted[@]}"; do
+            local file="${pair#*:}"
+            basename "$file" .md
+        done
+    else
+        print_header
+        for pair in "${sorted[@]}"; do
+            local file="${pair#*:}"
+            print_task_row "$file"
+        done
+    fi
 }
 
 cmd_ghi() {
@@ -1022,6 +1073,64 @@ COMMANDS
   ghi push            Push a local task to GitHub as a new issue
   ghi sync            Bidirectional sync with linked GitHub issues
 
+  create "title"              Create a new task
+    --type=TYPE               task|bug|feature|chore|epic|decision (default: task)
+    --priority=N              0=critical 1=high 2=medium 3=low 4=backlog (default: 2)
+    --description="text"      Optional description (stored in file body)
+    --labels=tag1,tag2        Comma-separated labels
+    --blocked_by=id1,id2      Comma-separated task IDs that block this task
+    --parent=id               Parent task ID (for sub-tasks)
+
+  show <id>                   Display full task details
+
+  list                        List tasks
+    --status=STATUS           Filter by status (open|in_progress|blocked|deferred)
+    --type=TYPE               Filter by type
+    --priority=N              Filter by priority
+    --parent=id               Filter by parent task ID
+    --closed                  Include closed tasks (from .chalk/tasks/closed/)
+    --limit=N                 Max rows to show (default: 50; use 0 for unlimited)
+    --output=ids              Emit one task ID per line (machine-readable)
+
+  update <id>                 Update task fields
+    --status=STATUS           open|in_progress|blocked|deferred
+    --priority=N              0-4
+    --title="new title"
+    --type=TYPE               Also renames the file
+    --labels=tag1,tag2
+    --blocked_by=id1,id2      Set to empty string to clear: --blocked_by=
+    --parent=id
+
+  close <id>                  Mark task closed and move to .chalk/tasks/closed/
+
+  ready                       Show open tasks sorted by priority
+    --parent=id               Filter by parent task ID
+    --output=ids              Emit one task ID per line (machine-readable)
+
+  ghi clone                   Clone open GitHub issues as local tasks
+    --limit=N                 Max issues to fetch (default: 500)
+  ghi push <id>               Push a local task to GitHub as a new issue
+    -a, --all                 Push all tasks without a remote URL
+  ghi sync [id]               Bidirectional sync with linked GitHub issues
+                              Syncs all linked tasks if no ID given
+
+FILES
+  .chalk/tasks/<type>_<id>.md        Active tasks
+  .chalk/tasks/closed/<type>_<id>.md Closed tasks
+
+FRONTMATTER FIELDS
+  id, title, type, status, priority, labels, blocked_by, parent,
+  remote_task_url, created_at, updated_at
+
+EXAMPLES
+  chalk create "Fix login bug" --type=bug --priority=1
+  chalk update bug_a3f2 --status=in_progress
+  chalk update task_ed8f --blocked_by=bug_a3f2
+  chalk close task_ed8f
+  chalk list --status=open --type=bug
+  chalk list --status=blocked --output=ids | xargs -I{} chalk close {}
+  chalk ready
+  chalk ready --output=ids
 HELP
 }
 
