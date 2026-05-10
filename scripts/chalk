@@ -1073,64 +1073,6 @@ COMMANDS
   ghi push            Push a local task to GitHub as a new issue
   ghi sync            Bidirectional sync with linked GitHub issues
 
-  create "title"              Create a new task
-    --type=TYPE               task|bug|feature|chore|epic|decision (default: task)
-    --priority=N              0=critical 1=high 2=medium 3=low 4=backlog (default: 2)
-    --description="text"      Optional description (stored in file body)
-    --labels=tag1,tag2        Comma-separated labels
-    --blocked_by=id1,id2      Comma-separated task IDs that block this task
-    --parent=id               Parent task ID (for sub-tasks)
-
-  show <id>                   Display full task details
-
-  list                        List tasks
-    --status=STATUS           Filter by status (open|in_progress|blocked|deferred)
-    --type=TYPE               Filter by type
-    --priority=N              Filter by priority
-    --parent=id               Filter by parent task ID
-    --closed                  Include closed tasks (from .chalk/tasks/closed/)
-    --limit=N                 Max rows to show (default: 50; use 0 for unlimited)
-    --output=ids              Emit one task ID per line (machine-readable)
-
-  update <id>                 Update task fields
-    --status=STATUS           open|in_progress|blocked|deferred
-    --priority=N              0-4
-    --title="new title"
-    --type=TYPE               Also renames the file
-    --labels=tag1,tag2
-    --blocked_by=id1,id2      Set to empty string to clear: --blocked_by=
-    --parent=id
-
-  close <id>                  Mark task closed and move to .chalk/tasks/closed/
-
-  ready                       Show open tasks sorted by priority
-    --parent=id               Filter by parent task ID
-    --output=ids              Emit one task ID per line (machine-readable)
-
-  ghi clone                   Clone open GitHub issues as local tasks
-    --limit=N                 Max issues to fetch (default: 500)
-  ghi push <id>               Push a local task to GitHub as a new issue
-    -a, --all                 Push all tasks without a remote URL
-  ghi sync [id]               Bidirectional sync with linked GitHub issues
-                              Syncs all linked tasks if no ID given
-
-FILES
-  .chalk/tasks/<type>_<id>.md        Active tasks
-  .chalk/tasks/closed/<type>_<id>.md Closed tasks
-
-FRONTMATTER FIELDS
-  id, title, type, status, priority, labels, blocked_by, parent,
-  remote_task_url, created_at, updated_at
-
-EXAMPLES
-  chalk create "Fix login bug" --type=bug --priority=1
-  chalk update bug_a3f2 --status=in_progress
-  chalk update task_ed8f --blocked_by=bug_a3f2
-  chalk close task_ed8f
-  chalk list --status=open --type=bug
-  chalk list --status=blocked --output=ids | xargs -I{} chalk close {}
-  chalk ready
-  chalk ready --output=ids
 HELP
 }
 
