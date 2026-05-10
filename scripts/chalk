@@ -215,24 +215,7 @@ print_task_row() {
 # ── Commands ─────────────────────────────────────────────────────────────────
 
 cmd_create() {
-    if [[ $# -eq 0 ]]; then
-        cat << 'HELP'
-chalk create "title" [options]
-
-  --type=TYPE               task|bug|feature|chore|epic|decision (default: task)
-  --priority=N              0=critical 1=high 2=medium 3=low 4=backlog (default: 2)
-  --description="text"      Optional description (stored in file body)
-  --labels=tag1,tag2        Comma-separated labels
-  --blocked_by=id1,id2      Comma-separated task IDs that block this task
-  --parent=id               Parent task ID (for sub-tasks)
-
-EXAMPLES
-  chalk create "Fix login bug" --type=bug --priority=1
-  chalk create "Add OAuth support" --type=feature --labels=auth,backend
-  chalk create "Write API docs" --parent=epic_a3f2 --priority=3
-HELP
-        return 0
-    fi
+    [[ $# -eq 0 ]] && set -- --help
 
     local title="" type="task" priority="2"
     local labels="[]" blocked_by="[]" parent="null" remote_task_url="null" description=""
@@ -469,7 +452,7 @@ EXAMPLES
   chalk update task_ed8f --blocked_by=bug_a3f2
   chalk update task_ed8f --blocked_by=
 HELP
-        [[ $# -eq 0 ]] && return 0 || return 0
+        [[ $# -eq 0 ]] && return 1 || return 0
     fi
 
     local id="$1"; shift
@@ -539,6 +522,24 @@ HELP
                 update_field "$file" "remote_task_url" "${1#*=}"
                 updated=true
                 ;;
+            --help|-h)
+                cat << 'HELP'
+chalk update <id> [options]
+
+  --status=STATUS           open|in_progress|blocked|deferred
+  --priority=N              0=critical 1=high 2=medium 3=low 4=backlog
+  --title="new title"
+  --type=TYPE               Also renames the file
+  --labels=tag1,tag2
+  --blocked_by=id1,id2      Set to empty string to clear: --blocked_by=
+  --parent=id
+
+EXAMPLES
+  chalk update bug_a3f2 --status=in_progress
+  chalk update task_ed8f --blocked_by=bug_a3f2
+  chalk update task_ed8f --blocked_by=
+HELP
+                return 0 ;;
             --*)
                 echo "ERROR: unknown option '$1'. Valid options: --status= --priority= --title= --type= --labels= --blocked_by= --parent= --remote_task_url= Example: chalk update <id> --status=in_progress" >&2
                 return 1
@@ -828,17 +829,7 @@ HELP
     done
 
     if [[ -z "$task_id" ]] && ! $all; then
-        cat << 'HELP'
-chalk ghi push <id> [options]
-
-Push a local task to GitHub as a new issue.
-
-  -a, --all                 Push all tasks that don't yet have a remote URL
-
-EXAMPLES
-  chalk ghi push task_a3f2
-  chalk ghi push --all
-HELP
+        echo "ERROR: task ID required. Usage: chalk ghi push <id> [--all]. Run 'chalk ghi push --help' for details." >&2
         return 1
     fi
 
