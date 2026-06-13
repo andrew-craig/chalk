@@ -31,15 +31,18 @@ get_field() {
 }
 
 # Extract frontmatter from many task files in a SINGLE awk pass and emit one
-# tab-separated record per file (avoids spawning awk once per field per file).
-# Columns: id<TAB>type<TAB>status<TAB>priority<TAB>parent<TAB>blocked_by<TAB>remote_task_url<TAB>title
+# record per file (avoids spawning awk once per field per file).
+# Columns are joined by \037 (ASCII Unit Separator) — a non-whitespace delimiter
+# so that bash `read` preserves empty fields instead of collapsing adjacent
+# separators (which a whitespace delimiter like TAB would do).
+# Columns: id|type|status|priority|parent|blocked_by|remote_task_url|title
 # Field parsing mirrors get_field exactly (same delimiter and frontmatter rules).
 scan_tasks() {
     [[ $# -gt 0 ]] || return 0
     awk '
         function flush() {
             if (id != "")
-                printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", \
+                printf "%s\037%s\037%s\037%s\037%s\037%s\037%s\037%s\n", \
                     id, type, status, priority, parent, blocked, remote, title
         }
         FNR == 1 {
@@ -268,7 +271,7 @@ generate_task_list() {
     done < <(find "$TASKS_DIR" -maxdepth 1 -name "*.md" -not -name ".gitkeep" -print0 2>/dev/null)
     if [[ ${#files[@]} -gt 0 ]]; then
         local id type status priority parent blocked remote title
-        while IFS=$'\t' read -r id type status priority parent blocked remote title; do
+        while IFS=$'\037' read -r id type status priority parent blocked remote title; do
             local line="- **${id}** · P${priority} · ${status} · ${title}"
             if [[ -n "$parent" && "$parent" != "null" ]]; then
                 line="${line}  (parent: ${parent})"
@@ -475,12 +478,12 @@ HELP
     # render records: id<TAB>type<TAB>status<TAB>priority<TAB>remote<TAB>title.
     local -a matched=()
     local id type status priority parent blocked remote title
-    while IFS=$'\t' read -r id type status priority parent blocked remote title; do
+    while IFS=$'\037' read -r id type status priority parent blocked remote title; do
         [[ -n "$filter_status"   && "$status"   != "$filter_status"   ]] && continue
         [[ -n "$filter_type"     && "$type"     != "$filter_type"     ]] && continue
         [[ -n "$filter_priority" && "$priority" != "$filter_priority" ]] && continue
         [[ -n "$filter_parent"   && "$parent"   != "$filter_parent"   ]] && continue
-        matched+=("${id}"$'\t'"${type}"$'\t'"${status}"$'\t'"${priority}"$'\t'"${remote}"$'\t'"${title}")
+        matched+=("${id}"$'\037'"${type}"$'\037'"${status}"$'\037'"${priority}"$'\037'"${remote}"$'\037'"${title}")
     done < <(scan_tasks "${files[@]}")
 
     local total=${#matched[@]}
@@ -498,7 +501,7 @@ HELP
     if [[ "$output" == "ids" ]]; then
         local i=0
         while [[ $i -lt $display_count ]]; do
-            IFS=$'\t' read -r id _ <<< "${matched[$i]}"
+            IFS=$'\037' read -r id _ <<< "${matched[$i]}"
             printf '%s\n' "$id"
             i=$((i + 1))
         done
@@ -506,7 +509,7 @@ HELP
         print_header
         local i=0
         while [[ $i -lt $display_count ]]; do
-            IFS=$'\t' read -r id type status priority remote title <<< "${matched[$i]}"
+            IFS=$'\037' read -r id type status priority remote title <<< "${matched[$i]}"
             print_task_row "$id" "$type" "$status" "$priority" "$remote" "$title"
             i=$((i + 1))
         done
@@ -770,11 +773,11 @@ HELP
     local -a pairs=()
     if [[ ${#files[@]} -gt 0 ]]; then
         local id type status priority parent blocked remote title
-        while IFS=$'\t' read -r id type status priority parent blocked remote title; do
+        while IFS=$'\037' read -r id type status priority parent blocked remote title; do
             [[ "$status" == "open" ]] || continue
             [[ -z "$blocked" || "$blocked" == "[]" ]] || continue
             [[ -n "$filter_parent" && "$parent" != "$filter_parent" ]] && continue
-            pairs+=("${priority}"$'\t'"${id}"$'\t'"${type}"$'\t'"${status}"$'\t'"${remote}"$'\t'"${title}")
+            pairs+=("${priority}"$'\037'"${id}"$'\037'"${type}"$'\037'"${status}"$'\037'"${remote}"$'\037'"${title}")
         done < <(scan_tasks "${files[@]}")
     fi
 
@@ -785,18 +788,18 @@ HELP
 
     # Sort by priority (numerically)
     local -a sorted
-    IFS=$'\n' read -r -d '' -a sorted < <(printf '%s\n' "${pairs[@]}" | sort -t$'\t' -k1,1n && printf '\0') || true
+    IFS=$'\n' read -r -d '' -a sorted < <(printf '%s\n' "${pairs[@]}" | sort -t$'\037' -k1,1n && printf '\0') || true
 
     local prio id type status remote title
     if [[ "$output" == "ids" ]]; then
         for pair in "${sorted[@]}"; do
-            IFS=$'\t' read -r prio id _ <<< "$pair"
+            IFS=$'\037' read -r prio id _ <<< "$pair"
             printf '%s\n' "$id"
         done
     else
         print_header
         for pair in "${sorted[@]}"; do
-            IFS=$'\t' read -r prio id type status remote title <<< "$pair"
+            IFS=$'\037' read -r prio id type status remote title <<< "$pair"
             print_task_row "$id" "$type" "$status" "$prio" "$remote" "$title"
         done
     fi
