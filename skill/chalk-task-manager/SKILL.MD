@@ -59,6 +59,11 @@ updated_at: 2026-03-21T11:30:00Z
 Optional description or notes go here.
 ```
 
+`.chalk/task_list.md` is an optional, auto-generated human-readable summary of
+active tasks (created via `chalk tasklist` or `chalk init`, refreshed on every
+mutation while it exists). It is a derived artifact for humans browsing the repo
+— do not read or parse it to query state; always use `chalk ready`/`chalk list`.
+
 ### Agent Workflow
 
 ```bash

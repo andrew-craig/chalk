@@ -39,6 +39,7 @@ chalk/
 │       └── session-start.sh        # Installs chalk in remote Claude (Web) sessions
 └── .chalk/                         # This repo's own task directory (dogfooding)
     ├── scripts/chalk               # Snapshot installed by the session hook (not the source)
+    ├── task_list.md                # Optional auto-generated summary of active tasks
     └── tasks/                      # Active tasks; closed tasks live in tasks/closed/
 ```
 
@@ -54,13 +55,14 @@ For Claude Code Web sessions, `.claude/hooks/session-start.sh` re-runs the insta
 
 | Command | Description |
 |---------|-------------|
-| `chalk init` | Create `.chalk/tasks/` and `.chalk/tasks/closed/` at the repo root |
+| `chalk init [--no-task-list]` | Create `.chalk/tasks/` and `.chalk/tasks/closed/` at the repo root, and seed `.chalk/task_list.md` (unless `--no-task-list`) |
 | `chalk create "title" [opts]` | Create a new task |
 | `chalk show <id>` | Display full task details (frontmatter + body) |
 | `chalk list [filters]` | List tasks; supports `--status=`, `--type=`, `--priority=`, `--parent=`, `--closed`, `--limit=`, `--output=ids` |
 | `chalk ready [opts]` | Show open, unblocked tasks sorted by priority (the canonical "what should I work on" command); supports `--parent=`, `--output=ids` |
 | `chalk update <id> [fields]` | Update task fields; `--type=` also renames the file |
 | `chalk close <id>` | Close a task, move it to `.chalk/tasks/closed/`, auto-unblock dependents, announce epic completion |
+| `chalk tasklist` | Generate/refresh `.chalk/task_list.md`, a human-readable priority-sorted list of active tasks |
 | `chalk ghi clone` | Clone open GitHub issues as local tasks (skips already-cloned issues by URL) |
 | `chalk ghi push <id> [--all]` | Create GitHub issues from local tasks; stores the resulting URL in `remote_task_url` |
 | `chalk ghi sync [id]` | Bidirectional sync with linked GitHub issues based on `updated_at` timestamps |
@@ -107,6 +109,7 @@ Optional description body here.
 - **Closed-task immutability**: `chalk update` refuses to modify a task with `status: closed`. Reopen by editing the file directly or via `ghi sync`.
 - **GitHub label mapping**: `ghi clone` maps issue labels onto chalk fields — `bug`/`feature`/`chore`/`epic`/`decision` set `type`; `critical`/`urgent`/`P1`/etc. set `priority`; remaining labels carry over to the `labels` field.
 - **Sync direction**: `ghi sync` compares `updated_at` between local and remote and pulls or pushes accordingly.
+- **Task list summary (opt-in)**: `.chalk/task_list.md` is a human-readable, priority-sorted list of **active** tasks (ID, parent, priority, status, title) for browsing the repo without the CLI. It is created by `chalk tasklist` or `chalk init`, then refreshed automatically on every create/update/close and `ghi clone|push|sync` — but **only if the file already exists** (delete it, or `chalk init --no-task-list`, to opt out and avoid merge-conflict churn). Writes are atomic (`mktemp` + `mv`). The two helpers are `generate_task_list` (force-write) and `regenerate_task_list` (refresh-if-exists, called by mutations).
 
 ## Code Architecture
 
@@ -131,4 +134,5 @@ The script (`scripts/chalk`, ~1100 lines) has three sections:
 - Preserve `set -euo pipefail` and the YAML frontmatter format — external tools and the skill assume both.
 - Maintain ID uniqueness across `.chalk/tasks/` and `.chalk/tasks/closed/`.
 - New commands should support `--help`, inherit the `[exit:N | Nms]` footer via the entry-point trap, and follow the error-message convention.
+- Any new task-mutating code path should call `regenerate_task_list` after committing its change, so the opt-in `.chalk/task_list.md` summary stays current.
 - If a change alters task fields, command surface, or workflow, update the skill (`skill/chalk-task-manager/SKILL.MD`) and `README.md` to match.

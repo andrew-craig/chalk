@@ -54,6 +54,25 @@ Tasks can also be closed via `chalk close`.
 | `3` | Low |
 | `4` | Backlog |
 
+### Task list summary
+
+Chalk can maintain `.chalk/task_list.md` — a human-readable, priority-sorted
+list of your active tasks (ID, parent, priority, status, title). It lets anyone
+browsing the repo see what's in flight and what to pick up next, without
+installing the CLI.
+
+The summary is **opt-in** so it doesn't create merge-conflict churn for teams
+that don't want it:
+
+- `chalk init` seeds it by default; pass `chalk init --no-task-list` to skip it.
+- `chalk tasklist` generates or rebuilds it at any time.
+- While the file exists, every `create`, `update`, `close`, and `ghi
+  clone|push|sync` refreshes it automatically.
+- Delete the file to opt out — mutations won't recreate it.
+
+The file is auto-generated; don't edit it by hand. It lists active tasks only;
+closed tasks live in `.chalk/tasks/closed/`.
+
 ## Install in Claude Code (including web)
 
 To install in Claude Code, including Claude Code web instances, create a session-start.sh file with the below content. Add this to your `.claude/hooks/` directory
